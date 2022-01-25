@@ -35,6 +35,7 @@ void () UnHookPlayer;
 void (entity player, float reset) TeamCaptureDropFlagOfPlayer;
 void () respawn;
 void () DropRune;
+void hud_update(); //QE
 
 //
 //  F I N D  T E L E P O R T
@@ -167,10 +168,15 @@ void () observer_walk_start =
 	self.flags = self.flags - (self.flags & FL_ONGROUND);
 	self.view_ofs = '0 0 22';
 //	droptofloor(0, 0);
-	if (self.style & CLANRING_FOUND_BINDINGS)// CRMOD - don't send sm0 if they don't have that alias
-		stuffcmd(self, "sm0\n");// CRMOD - smoothing off
-	else
-		stuffcmd(self, "cl_nolerp 0\n");// CRMOD - send the real thing instead
+	//QE
+	// if (self.style & CLANRING_FOUND_BINDINGS)// CRMOD - don't send sm0 if they don't have that alias
+	// 	stuffcmd(self, "sm0\n");// CRMOD - smoothing off
+	// else
+	// 	stuffcmd(self, "cl_nolerp 0\n");// CRMOD - send the real thing instead
+	sprint(self, "disabling 'smooth' mode\n");
+    stuffcmd(self, "cl_nolerp 0\n");		// CRMOD - interpolation buffering on (back to default)
+    stuffcmd(self, "cl_predict 1\n");		// CRMOD - client prediction on (back to default)
+	//QE
 	stuffcmd(self, "v_centerspeed 500\n");
 	sprint(self, "walk mode - help-walk for help\n");
 	if (!(self.style & CLANRING_HEADS_UP))
@@ -190,7 +196,12 @@ void () observer_fly_start =
 	self.view_ofs = '0 0 22';
 	self.flags = self.flags | FL_ONGROUND;
 	self.waterlevel = 0;
-	stuffcmd(self, "sm0\n");		// CRMOD - smoothing off
+	//QE
+	//stuffcmd(self, "sm0\n");		// CRMOD - smoothing off
+	sprint(self, "disabling 'smooth' mode\n");
+    stuffcmd(self, "cl_nolerp 0\n");		// CRMOD - interpolation buffering on (back to default)
+    stuffcmd(self, "cl_predict 1\n");		// CRMOD - client prediction on (back to default)
+	//QE
 	stuffcmd(self, "v_centerspeed 500\n");
 	sprint(self, "fly mode - help-fly for help\n");
 	if (!(self.style & CLANRING_HEADS_UP))
@@ -311,7 +322,12 @@ void () observer_chase_start =
 	if (!(self.style & CLANRING_HEADS_UP))
 		sprint(self, "type 'headsup' for fullscreen display\n");
 	
-	sprint(self, "type 'smooth' to eliminate choppines\n");
+	//QE
+	//sprint(self, "type 'smooth' to eliminate choppines\n");
+	sprint(self, "enabling 'smooth' mode to eliminate choppines\n");
+    stuffcmd(self, "cl_nolerp 1\n");		// CRMOD - interpolation buffering off
+    stuffcmd(self, "cl_predict 0\n");		// CRMOD - client prediction off
+	//QE
 };
 
 //
@@ -353,7 +369,12 @@ void () observer_demo_start =
     sprint(self, "eyecam mode - help-chase for help\n");
     if (!(self.style & CLANRING_HEADS_UP))
         sprint(self, "type 'headsup' for fullscreen display\n");
-	sprint(self, "type 'smooth' to eliminate choppines\n");
+	//QE
+	//sprint(self, "type 'smooth' to eliminate choppines\n");
+    sprint(self, "enabling 'smooth' mode to eliminate choppines\n");
+    stuffcmd(self, "cl_nolerp 1\n");		// CRMOD - interpolation buffering off
+    stuffcmd(self, "cl_predict 0\n");		// CRMOD - client prediction off
+	//QE
 
 	self.nextthink = -1;
     self.think = SUB_Null;
@@ -517,7 +538,12 @@ void() observer_end =
 	self.frags 	= 0;
 	self.killed = 0;
 	observer_check_demo_end();
-	stuffcmd(self, "sm0\n");// CRMOD - smoothing off
+	//QE
+	//stuffcmd(self, "sm0\n");// CRMOD - smoothing off
+	sprint(self, "disabling 'smooth' mode\n");
+    stuffcmd(self, "cl_nolerp 0\n");		// CRMOD - interpolation buffering on (back to default)
+    stuffcmd(self, "cl_predict 1\n");		// CRMOD - client prediction on (back to default)
+	//QE
 	stuffcmd(self, "v_centerspeed 500\n");
 	if (self.style & CLANRING_HEADS_UP)
 		stuffcmd(self, "viewsize 100\n");
@@ -1406,7 +1432,17 @@ void () observer_update_display =
 	player = self.movetarget;
 	if ((player != world) && (player.classname == "clanring_camera"))
 		player = player.movetarget;
-    
+
+//QE
+    // New HUD
+    hud_update();
+
+    // Skip old observer hud stuff below
+    return;
+
+    // TODO come back and see if there's more to re-enable from this
+//QE		
+
     if (!player)
     {
 		if (clanring_state & CLANRING_MATCH_STARTED)

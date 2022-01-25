@@ -417,8 +417,11 @@ void(entity ent) CreateDeadBody;
 // called by ClientKill and DeadThink
 void() respawn =
 {
-//	CopyToBodyQue (self);//R00k remove bodies when player respawns.
-	CreateDeadBody (self);//R00k new corpse routine.
+	//QE
+	// Don't leave bodies around in match mode
+	//	CopyToBodyQue (self);//R00k remove bodies when player respawns.
+	//CreateDeadBody (self);//R00k new corpse routine.
+	//QE
 	SetNewParms2 ();
 
 	updatename(self, self.netname);	
@@ -1396,7 +1399,10 @@ void() CheckPowerups =
 			self.invincible_finished = 0;
 			if (!self.super_damage_finished)
 				self.effects = self.effects - (self.effects & EF_DIMLIGHT);
-			self.effects = self.effects - (self.effects & EF_RED);
+			//QE
+			//self.effects = self.effects - (self.effects & EF_RED);
+			self.effects = self.effects - (self.effects & EF_PENTLIGHT);
+			//QE
 		}// end
 		else
 		{
@@ -1425,7 +1431,10 @@ void() CheckPowerups =
 				self.invincible_finished = 0;
 				if (!self.super_damage_finished)
 					self.effects = self.effects - (self.effects & EF_DIMLIGHT);
-				self.effects = self.effects - (self.effects & EF_RED);
+				//QE
+				//self.effects = self.effects - (self.effects & EF_RED);
+				self.effects = self.effects - (self.effects & EF_PENTLIGHT);
+				//QE
 			}
 		}
 	}
@@ -1441,7 +1450,10 @@ void() CheckPowerups =
 			{
 				self.effects = self.effects - (self.effects & EF_DIMLIGHT);
 			}
-			self.effects = self.effects - (self.effects & EF_BLUE);
+			//QE
+			//self.effects = self.effects - (self.effects & EF_BLUE);
+			self.effects = self.effects - (self.effects & EF_QUADLIGHT);
+			//QE
 			return;
 		}// end
 		else
@@ -1467,10 +1479,11 @@ void() CheckPowerups =
 				self.super_damage_finished = 0;
 				self.super_time = 0;
 				if (!self.invincible_finished)
-				{
-					self.effects = self.effects - (self.effects & EF_DIMLIGHT);
-				}
-				self.effects = self.effects - (self.effects & EF_BLUE);
+ 					self.effects = self.effects - (self.effects & EF_DIMLIGHT);
+				//QE
+				//self.effects = self.effects - (self.effects & EF_BLUE);
+				self.effects = self.effects - (self.effects & EF_QUADLIGHT);
+				//QE
 			}
 		}
 	}
@@ -1546,6 +1559,24 @@ void() PlayerPostThink =
 		observer_post_think ();
 		return;
 	}
+	//QE
+	else
+	{
+		// Let the welcome message print without trying to print a HUD over it
+		if (!(self.style & CLANRING_MOTD))
+		{
+			// Only update after delay time has been reached
+			if (time >= self.delay)
+			{
+				// Only update every 0.1 seconds
+				self.delay = time + 0.1;
+
+				// Recalculate/redraw player HUD
+				hud_update();
+			}
+		}
+	}
+	//QE
 
 	if (self.impulse)
 	{

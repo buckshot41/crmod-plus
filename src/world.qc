@@ -18,6 +18,7 @@
 */
 
 //void() InitBodyQue;
+void () spawn_entities;
 
 void() main =
 {
@@ -388,6 +389,8 @@ void() worldspawn =
 
 	// 63 testing
 	lightstyle(63, "a");
+
+	spawn_entities (); //QE spawn additional ents
 	
 	clanring_init_world ();    // ELOHIM_MOD - do server specific stuff
 };
