@@ -178,9 +178,9 @@ void () observer_walk_start =
     stuffcmd(self, "cl_predict 1\n");		// CRMOD - client prediction on (back to default)
 	//QE
 	stuffcmd(self, "v_centerspeed 500\n");
-	sprint(self, "walk mode - help-walk for help\n");
-	if (!(self.style & CLANRING_HEADS_UP))
-		sprint(self, "type 'headsup' for fullscreen display\n");
+	sprint(self, "walk mode\n");
+	//if (!(self.style & CLANRING_HEADS_UP))
+		//sprint(self, "type 'headsup' for fullscreen display\n");
 };
 
 //
@@ -191,8 +191,8 @@ void () observer_fly_start =
 	observer_check_demo_end();
 	observer_clear_flags();
 	self.oflags = self.oflags | OBSERVER_FLY;
-	self.movetype = MOVETYPE_FLY;
-	self.finaldest_y = MOVETYPE_FLY;
+	self.movetype = MOVETYPE_NOCLIP;			//R00k: changed (2022-01-26 11:01) from MOVETYPE_FLY;
+	self.finaldest_y = MOVETYPE_NOCLIP;			//R00k: changed (2022-01-26 11:01) from MOVETYPE_FLY;
 	self.view_ofs = '0 0 22';
 	self.flags = self.flags | FL_ONGROUND;
 	self.waterlevel = 0;
@@ -203,9 +203,9 @@ void () observer_fly_start =
     stuffcmd(self, "cl_predict 1\n");		// CRMOD - client prediction on (back to default)
 	//QE
 	stuffcmd(self, "v_centerspeed 500\n");
-	sprint(self, "fly mode - help-fly for help\n");
-	if (!(self.style & CLANRING_HEADS_UP))
-		sprint(self, "type 'headsup' for fullscreen display\n");
+	sprint(self, "fly mode\n");
+	//if (!(self.style & CLANRING_HEADS_UP))
+		//sprint(self, "type 'headsup' for fullscreen display\n");
 };
 
 // CRMOD
@@ -274,8 +274,8 @@ void () observer_camera_start =
 	else																// CRMOD
 		sprint(self,"type 'autocam' for automatic camera switching\n");	// CRMOD
 
-	if (!(self.style & CLANRING_HEADS_UP))
-		sprint(self, "type 'headsup' for fullscreen display\n");
+	//if (!(self.style & CLANRING_HEADS_UP))
+		//sprint(self, "type 'headsup' for fullscreen display\n");
 
 	sprint(self, "type 'smooth' to eliminate choppines\n");
 };
@@ -319,8 +319,8 @@ void () observer_chase_start =
 	if (self.oflags & OBSERVER_TOURNEY)
 		sprint(self, "Tournament Mode Enabled.\n");
 	// END_CRMOD
-	if (!(self.style & CLANRING_HEADS_UP))
-		sprint(self, "type 'headsup' for fullscreen display\n");
+	//if (!(self.style & CLANRING_HEADS_UP))
+		//sprint(self, "type 'headsup' for fullscreen display\n");
 	
 	//QE
 	//sprint(self, "type 'smooth' to eliminate choppines\n");
@@ -366,9 +366,9 @@ void () observer_demo_start =
     setmodel(self, string_null);
     observer_set_demo_position();
     stuffcmd(self, "v_centerspeed 0\n");
-    sprint(self, "eyecam mode - help-chase for help\n");
-    if (!(self.style & CLANRING_HEADS_UP))
-        sprint(self, "type 'headsup' for fullscreen display\n");
+    sprint(self, "eyecam mode\n");
+   // if (!(self.style & CLANRING_HEADS_UP))
+        //sprint(self, "type 'headsup' for fullscreen display\n");
 	//QE
 	//sprint(self, "type 'smooth' to eliminate choppines\n");
     sprint(self, "enabling 'smooth' mode to eliminate choppines\n");
@@ -1433,6 +1433,11 @@ void () observer_update_display =
 	if ((player != world) && (player.classname == "clanring_camera"))
 		player = player.movetarget;
 
+	if ((clanring_state & CLANRING_TIMER_STARTED) && !(clanring_state & CLANRING_MATCH_STARTED))
+	{
+		clanring_show_rules_prematch();
+		return;
+	}
 //QE
     // New HUD
     hud_update();
@@ -1741,7 +1746,7 @@ void () observer_pre_think =
 			self.waterlevel = 0;
             observer_fly_move();
             self.flags = self.flags | FL_ONGROUND;
-            self.finaldest_y = self.movetype = MOVETYPE_FLY;
+            self.finaldest_y = self.movetype = MOVETYPE_NOCLIP;//R00k: changed to MOVETYPE_NOCLIP was MOVETYPE_FLY
         }
         observer_check_teleport();
 

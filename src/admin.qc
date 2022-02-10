@@ -834,7 +834,7 @@ void(float val) admin_dmset =
 	if (val != -1)
 	deathmatch = val - 1;
 	deathmatch = deathmatch + 1;
-	if (deathmatch == 4)
+	if (deathmatch > 4)//R00k changed to allow dmm4
 	deathmatch = 1;
 	temp = ftos(deathmatch);
 	localcmd3("deathmatch ", temp, "\n");
@@ -1246,13 +1246,6 @@ void() admin_auto_screenshot =
 
 void() admin_impulse =
 {
-	if (self.impulse == 220)
-	{
-		votables_request_set_gametype();
-		self.impulse = 0;
-		return;
-	}
-
 	// votable commands
 	if (self.impulse >= 190 && self.impulse <= 196) //this is unused
 		votables_init_warp(self.impulse - 190);

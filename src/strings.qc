@@ -25,6 +25,25 @@ string (float n) strings_ftos=
 //
 string (float n) strings_ftos_gold =
 {
+	local float d1, d2, d3, t1;
+	if (n > 999)
+	{
+		return ftos(n); //sol for now
+	}
+	else if (n > 99)
+	{
+		d1 = n % 10;
+		t1 = (n - d1) / 10;
+		d2 = t1 % 10;
+		d3 = (t1 - d2) / 10;
+		return sprintf("%s%s%s", chr2str(18+d3), chr2str(18+d2), chr2str(18+d1));
+	}
+	else if (n > 9)
+	{
+		d1 = n % 10;
+		d2 = (n - d1) / 10;
+		return sprintf("%s%s", chr2str(18+d2), chr2str(18+d1));
+	}
 	return chr2str(18+n);
 };
 
@@ -41,33 +60,13 @@ string (float n) strings_ftos_bronze =
 //  Returns a string containing the amount of armour the player has.
 //  Used for observer mode heads-up display.
 //
-
 string (entity e) strings_get_armour_val =
 {
 	local string temp = "";
 
     if (e.items & IT_INVULNERABILITY)
         return "\<\6\6\6\>";
-	temp = sprintf("%03g", self.armorvalue);
-	return temp;
-};
-
-string (entity e) strings_get_armor_type =
-{	
-   	if (e.items & IT_ARMOR3)	return "\n\b[\bR";    	
-   	if (e.items & IT_ARMOR2)	return "\n\b[\bY";   	
-   	if (e.items & IT_ARMOR1) 	return "\n\b[\bG";
-   	  
-	return "\n\b[";
-};
-
-string (entity e) strings_get_armor_val =
-{
-	local string temp = "";
-
-    if (e.items & IT_INVULNERABILITY)
-        return "\<\6\6\6\>";
-	temp = sprintf("%03g", self.armorvalue);
+	temp = sprintf("%03g", e.armorvalue);
 	return temp;
 };
 
@@ -716,18 +715,4 @@ string (float n) strings_szplural =
     if (n == 1)
         return "";
     return "s";
-};
-
-string (entity e) strings_get_rune_type =
-{
-	if (e.player_flag & ITEM_RUNE1_FLAG)//Rune 1 - Earth Magic(resistance)
-	   return "\b]\néresistanceé";	
-	if (e.player_flag & ITEM_RUNE2_FLAG)//Rune 2 - Black Magic(strength)
-	   return "\b]\néstrengthé";
-	if (e.player_flag & ITEM_RUNE3_FLAG)//Rune 3 - Hell Magic(haste)
-	   return "\b]\néhasteé";
-	if (e.player_flag & ITEM_RUNE4_FLAG)//Rune 4 - Elder Magic(regeneration)
-	   return "\b]\néregenerationé";
-	   
-	return "\b]\n";
 };

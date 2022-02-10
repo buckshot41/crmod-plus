@@ -66,6 +66,18 @@ void() match_init_world =
 	}
 };
 
+float() match_prewar =
+{
+	if (!(clanring_playmode & CLANRING_MATCH_MODE))	//Fixed non matchmode unlimited ammo
+	
+		return FALSE;
+
+	if ((clanring_playmode & CLANRING_MATCH_MODE)&&((clanring_state & CLANRING_TIMER_STARTED)))
+		return FALSE;
+	else
+		return TRUE;
+};
+
 //
 //  S H O W  T I M E L I M I T
 //
@@ -478,17 +490,17 @@ void() match_timer_think2 =
 
 		if (self.lip > 1)
 		{
-			temp = ftos(self.lip);
+//			temp = ftos(self.lip);
 			match_show_timelimit();
-			announce3("Match ends in ", temp, " minutes");
-			if (self.lip == 5 * floor(self.lip / 5))
-				match_bprint_score();
+//			announce3("Match ends in ", temp, " minutes");
+//			if (self.lip == 5 * floor(self.lip / 5))
+//				match_bprint_score();
 		}
 		else
 		{
 			match_show_timelimit();
 			announce("Match ends in 1 minute");
-			match_bprint_score();
+//			match_bprint_score();
 		}
 	}
 	else
@@ -634,8 +646,8 @@ void() match_begin =
 	// Set the team size so that unwanted A-holes can't join in
 	match_get_maxsize();
 	temp = ftos(clanring_maxsize);
-	if (teamplay)
-		announce4("Match is ", temp, "v", temp);
+	//if (teamplay)
+		//announce4("Match is ", temp, "v", temp);
 
 	temp = ftos(clanring_timelimit);
 	announce2(temp, " minutes remaining");
@@ -647,7 +659,7 @@ void() match_begin =
 	self.nextthink = time + 1;
 	self.lip = clanring_timelimit;
 	self.count = 0;
-	match_show_timelimit();
+	match_show_timelimit();//This updates the server's TIMELIMIT cvar with match information that is used on the CCREQ_RULE_INFO for the web server browser.
 
 	// reset rocket launcher count
 	clanring_sentinel.ammo_rockets = 0;
@@ -680,7 +692,7 @@ void() match_bprint_timelimit =
 	local string digit;
 	local float temp;
 
-	bprint("‘ÈÌÂÏÈÌÈÙ ÈÛ ù");
+	bprint("√î√©√≠√•√¨√©√≠√©√¥ √©√≥ ¬ù");
 	temp = floor(clanring_timelimit / 10);
 	if (temp)
 	{
@@ -689,7 +701,7 @@ void() match_bprint_timelimit =
 	}
 	temp = clanring_timelimit - 10 * temp;
 	digit = strings_ftos_gold(temp);
-	bprint2(digit, "ü\n");
+	bprint2(digit, "¬ü\n");
 };
 
 //
@@ -711,7 +723,7 @@ void () match_reset_powerup =
 //
 void() match_timer_think1 =
 {
-	local string temp, plural;
+	//local string temp;
 
 	self.count -= 1;
 	if (self.count < 0)
@@ -722,61 +734,45 @@ void() match_timer_think1 =
 	self.nextthink = time + 1;
 	pqc_match_time(self.lip, self.count);
 	score_update_time();
-
 	if (self.count == self.dest_x)
 	{
-		match_bprint_timelimit();
-		bprint("Use 'ÙÈÌÂÛÂÙ' to change timelimit\n");
-	}
-	if (self.count == self.dest_y)
-	{
+		if (self.count != 5)
+		{
+			match_bprint_timelimit();
+			bprint("Use '√¥√©√≠√•√≥√•√¥' to change timelimit\n");
+		}
+
 		// respawn all items; reset information
 		utils_do_items(SUB_regen);
 		utils_do_item(match_reset_powerup, "item_artifact_invulnerability");
 		utils_do_item(match_reset_powerup, "item_artifact_super_damage");
-		announce("All items have respawned");
-
-		if (clanring_playmode & (CLANRING_NO_QUAD | CLANRING_NO_PENT | CLANRING_NO_RING))
-			cprint("- ");
+		//announce("All items have respawned");
 
 		if (clanring_playmode & CLANRING_NO_QUAD)
 		{
-			bprint("éQuad is œ∆∆");
-			localcmd("Quad is OFF - ");
 			utils_do_item(votables_disable_item, "item_artifact_super_damage");
 		}
 		if (clanring_playmode & CLANRING_NO_PENT)
 		{
-			bprint("éPent is œ∆∆");
-			localcmd("Pent is OFF - ");
 			utils_do_item(votables_disable_item, "item_artifact_invulnerability");
 		}
 		if (clanring_playmode & CLANRING_NO_RING)
 		{
-			bprint("éRing is œ∆∆");
-			localcmd("Ring is OFF - ");
 			utils_do_item(votables_disable_item, "item_artifact_invisibility");
-		}
-		if (clanring_playmode & (CLANRING_NO_QUAD | CLANRING_NO_PENT | CLANRING_NO_RING))
-		{
-			bprint("é\n");
-			localcmd("\n");
 		}
 		if (self.count == 30)
 			announce("Match begins in 30 seconds");
-		match_bprint_timelimit();
 	}
 	else
 	{
-		if (self.count == self.dest_z)
+		if (self.count == self.dest_y)
 		{
 			match_get_maxsize();
-			temp = ftos(clanring_maxsize);
-			if (teamplay)
-				announce4("Match is currently ", temp, "v", temp);
+			//temp = ftos(clanring_maxsize);
+			//if (teamplay)
+				//announce4("Match is currently ", temp, "v", temp);
 			if (self.count == 20)
 				announce("Match begins in 20 seconds");
-			match_bprint_timelimit();
 		}
 		else
 		{
@@ -784,19 +780,23 @@ void() match_timer_think1 =
 			{
 				if (self.count == 10)
 				{
-					announce("Match begins in T minus");
+					//announce("Match begins in T minus");
+					sound (world, CHAN_AUTO, "items/protect2.wav", 1, ATTN_NONE);
 					//quaketag_clear();
-
+				}
+				else if (self.count == 9)
+				{
 					if (clanring_playmode & CLANRING_CAPTURE_THE_FLAG)
 						TeamCaptureRegenFlags();// respawn flags
 					
 					clanring_state = clanring_state | CLANRING_NULL_FLAG;
 				}
-				temp = ftos(self.count);
-				plural = strings_szplural(self.count);
-				announce4("  ", temp, " second", plural);
+				if (self.count <= 3)
+					sound (world, CHAN_AUTO, "buttons/switch04.wav", 1, ATTN_NONE);
 				if (self.count == 1)
+				{
 					self.think = match_begin;
+				}
 			}
 		}
 	}
@@ -952,6 +952,8 @@ float () match_put_player_in_team =
 	pteam.count 					= 1; 
 	pteam.height 					= self.height;
 	
+	//setcolour(self, pteam.height, pteam.height);//Teams, are solid pants and shirts... fixme?
+
 	//refresh skins
 	if ((self.height + 1) == RED)
 	{		
@@ -1027,16 +1029,16 @@ void() match_start_timer =
 
 	if (clanring_playmode & CLANRING_FAST_START)
 	{
-		clanring_match_timer.dest 	= '18 15 12';
-		clanring_match_timer.count 	= 19;
-		announce("Match begins in 20 seconds");
+		clanring_match_timer.dest 	= '5 11 0';
+		clanring_match_timer.count 	= 12;
 	}
 	else
 	{
-		clanring_match_timer.dest 	= '55 30 20';
+		clanring_match_timer.dest 	= '55 20 0';
 		clanring_match_timer.count 	= 59;
 		announce("Match begins in 1 minute");
 	}
+
 	score_update_time();
 };
 
@@ -1340,7 +1342,7 @@ void(entity ghostent) match_restore_ghost =
 		pteam = pteam.next_team;
 	}
 
-	vote_init("ıÓ·ıÛÂ†ÙËÂ†Ì·Ù„Ë", "", match_start_unpause_countdown);
+	vote_init("√µ√Æ√∞√°√µ√≥√•¬†√¥√®√•¬†√≠√°√¥√£√®", "", match_start_unpause_countdown);
 };
 
 //
@@ -1471,7 +1473,7 @@ void() match_notready =
 	}
 
 	self.style = self.style - (self.style & CLANRING_READY);
-	
+
 	if (clanring_playmode & CLANRING_CAPTURE_THE_FLAG)
 		TeamCaptureDropFlagOfPlayer (self, 1);
 		
@@ -1548,7 +1550,7 @@ void() match_request_unlock =
 	{
 		if (self.style & CLANRING_READY)
 		{
-			if (vote_init("·ÏÏÔ˜†ÓÂ˜†Ï·˘ÂÚÛ†ÙÔ†ÍÔÈÓ", "", match_unlock))
+			if (vote_init("√°√¨√¨√Ø√∑¬†√Æ√•√∑¬†√∞√¨√°√π√•√≤√≥¬†√¥√Ø¬†√™√Ø√©√Æ", "", match_unlock))
 				vote_yes();
 		}
 		else
@@ -1609,7 +1611,7 @@ void() match_request_lock =
 	{
 		if (self.style & CLANRING_READY)
 		{
-			if (vote_init("ÏÔ„Î†ÙËÂ†Ì·Ù„Ë", "", match_lock))
+			if (vote_init("√¨√Ø√£√´¬†√¥√®√•¬†√≠√°√¥√£√®", "", match_lock))
 				vote_yes();
 		}
 		else
@@ -1734,7 +1736,7 @@ void() match_show_pause =
 	WriteByte(MSG_ALL, 2);
 	WriteByte(MSG_ALL, 2);
 	WriteByte(MSG_ALL, 3);
-	WriteString(MSG_ALL, "\nÑ–¡’”≈ƒÜ\náààààààâ");
+	WriteString(MSG_ALL, "\n¬Ñ√ê√Å√ï√ì√Ö√Ñ¬Ü\n¬á¬à¬à¬à¬à¬à¬à¬â");
 	clanring_match_timer.nextthink = time + 0.5;
 	clanring_match_timer.think = match_show_pause;
 };
@@ -1893,6 +1895,8 @@ void() match_unpause_countdown_think =
 	{
 		sz = ftos(self.count);
 		announce2(" ", sz);
+		if (self.count <= 3)
+			sound (world, CHAN_AUTO, "buttons/switch04.wav", 1, ATTN_NONE);
 		self.nextthink = time + 1;
 		self.count = self.count - 1;
 	}
@@ -1952,7 +1956,7 @@ void() match_request_unpause =
 		if (self.style & CLANRING_ADMINISTRATOR)
 			match_start_timer ();
 		else
-		if (vote_init("ÛÙ·ÚÙ†ÙËÂ†ÙÈÌÂÚ", "", match_start_timer))
+		if (vote_init("√≥√¥√°√≤√¥¬†√¥√®√•¬†√¥√©√≠√•√≤", "", match_start_timer))
 			vote_yes();
 
 		return;
@@ -1967,7 +1971,7 @@ void() match_request_unpause =
 	if (self.style & CLANRING_ADMINISTRATOR)
 		match_start_unpause_countdown ();
 	else
-	if (vote_init("ıÓ·ıÛÂ†ÙËÂ†Ì·Ù„Ë", "", match_start_unpause_countdown))
+	if (vote_init("√µ√Æ√∞√°√µ√≥√•¬†√¥√®√•¬†√≠√°√¥√£√®", "", match_start_unpause_countdown))
 		vote_yes();
 };
 

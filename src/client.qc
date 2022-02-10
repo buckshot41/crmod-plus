@@ -153,29 +153,36 @@ void() SetNewParms2 =
 	}
 	else
 	{
-		if (!(clanring_playmode & CLANRING_CAPTURE_THE_FLAG))		//Deathmatch
+		if ((clanring_playmode & CLANRING_MATCH_MODE)&&(!(clanring_state & CLANRING_TIMER_STARTED)))	//R00k: prewar! (or whatever we call it) aka BOSHMODeA
 		{
-			parm1 = IT_SHOTGUN | IT_AXE;
-			parm2 = 100;
-			parm3 = 0;
-			parm4 = 25;
-			parm5 = 0;
-			parm6 = 0;
-			parm7 = 0;
-			parm8 = IT_SHOTGUN;
-			parm9 = 0;
+			SetPracticeParms ();
 		}
 		else
 		{
-			parm1 = IT_SHOTGUN | IT_AXE | IT_HOOK | IT_ARMOR1;	//Capture the Flag
-			parm2 = 100;
-			parm3 = 50;
-			parm4 = 25;
-			parm5 = 0;
-			parm6 = 0;
-			parm7 = 0;
-			parm8 = IT_SHOTGUN;
-			parm9 = 30;
+			if (!(clanring_playmode & CLANRING_CAPTURE_THE_FLAG))		//Deathmatch
+			{
+				parm1 = IT_SHOTGUN | IT_AXE;
+				parm2 = 100;
+				parm3 = 0;
+				parm4 = 25;
+				parm5 = 0;
+				parm6 = 0;
+				parm7 = 0;
+				parm8 = IT_SHOTGUN;
+				parm9 = 0;
+			}
+			else
+			{
+				parm1 = IT_SHOTGUN | IT_AXE | IT_HOOK | IT_ARMOR1;	//Capture the Flag
+				parm2 = 100;
+				parm3 = 50;
+				parm4 = 25;
+				parm5 = 0;
+				parm6 = 0;
+				parm7 = 0;
+				parm8 = IT_SHOTGUN;
+				parm9 = 30;
+			}
 		}
 	}
 		
@@ -836,14 +843,20 @@ potential spawning position for deathmatch games
 void() info_player_deathmatch =
 {
 	dm_num_spawns = dm_num_spawns + 1.00;
+//	precache_model ("progs/s_light.spr");
+//	setmodel (self, "progs/s_light.spr");
 };
 
 void() info_player_team1 =
 {
+//	precache_model ("progs/s_light.spr");
+//	setmodel (self, "progs/s_light.spr");
 };
 
 void() info_player_team2 =
 {
+//	precache_model ("progs/s_light.spr");
+//	setmodel (self, "progs/s_light.spr");
 };
 /*QUAKED info_player_coop (1 0 1) (-16 -16 -24) (16 16 24)
 potential spawning position for coop games
@@ -1555,9 +1568,25 @@ void() PlayerPostThink =
 	// - changed gameover test from (self.view_ofs == '0 0 0') to (gameover)
 
 	if (self.style & CLANRING_OBSERVER)
-	{
+	{		
+		self.effects = 0;
 		observer_post_think ();
 		return;
+	}
+	else if ((clanring_state & CLANRING_TIMER_STARTED) && !(clanring_state & CLANRING_MATCH_STARTED))
+	{
+		clanring_show_rules_prematch();
+	}
+	else if ((clanring_state & CLANRING_MATCH_STARTED))
+	{
+		if (clanring_playmode & CLANRING_CAPTURE_THE_FLAG)
+			TeamCapturePlayerUpdate();
+		else if (clanring_match_timer.lip == clanring_timelimit)
+			centerprint(self, " \n\n\n"); //make sure rules centerprint is gone
+	}
+	else if (clanring_playmode & CLANRING_CAPTURE_THE_FLAG)
+	{
+		TeamCapturePlayerUpdate();
 	}
 	//QE
 	else
@@ -1626,6 +1655,17 @@ void() PlayerPostThink =
 				ident_get_target();
 				self.id_time = (time + 0.2);
 			}
+		}
+	}
+	//R00k: indicate to the player they are not ready. 
+	if (clanring_playmode & CLANRING_MATCH_MODE)
+	{
+		if (!(self.style & CLANRING_OBSERVER))
+		{
+			if (!(self.style & CLANRING_READY))
+				self.effects |= EF_RED;
+			else
+				self.effects = self.effects - (self.effects & EF_RED);
 		}
 	}
 
@@ -2025,7 +2065,7 @@ void(entity targ, entity attacker) ClientObituary =
 						}
 					}
 					
-					deathstring2 = ", with just his bare hands.\n";
+					deathstring2 = ", Âwith just his bare hands.\n";
 					
 					if (attacker.weapon == IT_ROCKET_LAUNCHER)
 						deathstring2 = ", with a Rocket Launcher.";
@@ -2038,7 +2078,7 @@ void(entity targ, entity attacker) ClientObituary =
 					if ((attacker.weapon == IT_SUPER_SHOTGUN))
 						deathstring2 = ", with a Super Shotgun.";
 					if ((attacker.weapon == IT_NAILGUN))
-						deathstring2 = ", with a Nailgun.";
+						deathstring2 = ", Âwith a Nailgun.";
 					if ((attacker.weapon == IT_SHOTGUN))
 						deathstring2 = ", with a Shotgun.";
 					if ((attacker.weapon == IT_AXE))
@@ -2362,4 +2402,40 @@ void(entity targ, entity attacker) ClientObituary =
 			announce2(targ.netname, " died");
 		}
 	}
+};
+
+void(string cmd) SV_ParseClientCommand =
+{
+    local float args, ep_index, index, n;
+    local string arg0 = "";
+
+    args = tokenize(cmd);
+	if (args > 0)
+    	arg0 = argv(0);
+
+    switch (arg0)
+    {
+		case "dm":
+			votables_request_set_gametype(0);
+			return;
+    	case "ctf":
+			votables_request_set_gametype(1);
+			return;
+		default:
+			for (ep_index = 1; ep_index < 10; ep_index += 1)
+			{
+				for (index = 1 ; index < 10 ; index += 1)
+				{
+					n = (ep_index * 10) + index;
+					if (warpmap[n].name != "" && warpmap[n].name == arg0)
+					{
+						votables_request_change_level(arg0);
+						return;
+					}
+				}
+			}
+			break;
+	}
+	clientcommand(self, cmd);
+	return;
 };

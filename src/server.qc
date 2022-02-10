@@ -248,6 +248,13 @@ void () player_hook3;
 void () HookFire2;
 void () ban_kick_client;
 void (entity client) clanring_kick_player;
+void () modes_commands;
+void () gameplay_commands;
+void () watch_commands;
+void () stat_commands;
+void () misc_commands;
+void () modhelp_commands;
+void () shortcuts_commands;
 
 //
 // C L E A R   A F K   S T A T U S
@@ -340,6 +347,7 @@ void () clanring_init_world =
 		clanring_playmode 	= clanring_playmode | CLANRING_MATCH_MODE;
 		clanring_playmode 	= clanring_playmode | CLANRING_CAPTURE_THE_FLAG;//default match clanring ctf
 		clanring_playmode 	= clanring_playmode | CLANRING_SERVER_INITIALIZED;
+		//clanring_state 		= clanring_state 	| CLANRING_TEAM_CAPTURE_CUSTOM;
 		
 		utils_set_cvar("samelevel", clanring_playmode);		
 	}//initialized
@@ -382,18 +390,24 @@ void () clanring_init_world =
 	clanring_best_camera 		= world;
 	clanring_current_camera 	= world;
 	clanring_camera_delay 		= 0;
-	auto_parm1 					= 600; // only rocket bonus
+	auto_parm1 					= 600; 	// only rocket bonus
 	auto_parm2 					= 1000; // pent proximity bonus
-	auto_parm3 					= 500; // quad proximity bonus
+	auto_parm3 					= 500; 	// quad proximity bonus
 	auto_parm4 					= 0;
 	clanring_pent 				= world;
 	clanring_quad 				= world;
 	
-	clanring_afk_check 			= 300; //R00k: 5 MINUTES default for AFK status.
+	clanring_afk_check 			= 300; 	//R00k: 5 MINUTES default for AFK status.
 	clanring_afk_timeout 		= 1800; //Time to kick after AFK (30 minutes).
 
 	utils_make_scheduled_event(clanring_find_powerups, 5);
 	nextmap = "";
+
+	//R00k: ticrate defaults for different modes :|
+	if (clanring_playmode & CLANRING_CAPTURE_THE_FLAG)
+		cvar_set("sys_ticrate", ftos(clanring_ctf_ticrate));
+	else
+		cvar_set("sys_ticrate", ftos(clanring_tdm_ticrate));
 
 	if (clanring_playmode & CLANRING_MATCH_MODE)
 	{
@@ -417,6 +431,9 @@ void () clanring_init_world =
 		cvar_set("timelimit","30");
 		timelimit = (cvar("timelimit")*60);
 	}
+	else
+	if ((clanring_playmode & CLANRING_CAPTURE_THE_FLAG) && (clanring_playmode & CLANRING_PRACTICE_MODE))
+		clanring_state = clanring_state | CLANRING_TEAM_CAPTURE_CUSTOM;
 	else
 	if ((clanring_playmode & CLANRING_CAPTURE_THE_FLAG) && (clanring_playmode & CLANRING_MATCH_MODE))
 	{
@@ -535,6 +552,7 @@ void (float value) clanring_set_fraglimit =
 void () clanring_set_aliases =
 {
 	local entity temp;
+	local float ep_index, index, n;
 
 	temp = self;
 	self = self.owner;
@@ -547,7 +565,7 @@ void () clanring_set_aliases =
 		return;
 	}
 
-	sprint3(self, "Sending ", clanring_version, " bindings\n");
+	//sprint3(self, "Sending ", clanring_version, " bindings\n");
 
 	// Cheat fixes
 	stuffcmd(self, "alias r_ambient echo r_ambient has been disabled on this server.\n");
@@ -642,7 +660,27 @@ void () clanring_set_aliases =
 	stuffcmd(self, "alias nextmap impulse 199\n");	
 	//stuffcmd(self, "alias vote-exit impulse 204\n");
 	stuffcmd(self, "alias faststart impulse 209\n");		
-	stuffcmd(self, "alias afk impulse 70\n");
+	stuffcmd(self, "alias afk impulse 57\n");
+	stuffcmd(self, "alias modes impulse 181\n");
+	stuffcmd(self, "alias gameplay impulse 182\n");
+	stuffcmd(self, "alias watch impulse 183\n");
+	stuffcmd(self, "alias stat impulse 184\n");
+	stuffcmd(self, "alias misc impulse 185\n");
+	stuffcmd(self, "alias modhelp impulse 186\n");
+	stuffcmd(self, "alias shortcuts impulse 187\n");
+
+	//send map warp aliases
+	for (ep_index = 1; ep_index < 10; ep_index += 1)
+	{
+		for (index = 1 ; index < 10 ; index += 1)
+		{
+			n = (ep_index * 10) + index;
+			if (warpmap[n].name != "")
+			{
+				stuffcmd(self, sprintf("alias %s cmd %s\n", warpmap[n].name, warpmap[n].name));
+			}
+		}
+	}
 	
 	self.style = self.style | CLANRING_FOUND_BINDINGS;
 
@@ -731,7 +769,7 @@ void () clanring_show_mode =
 	if (clanring_playmode & CLANRING_MATCH_MODE)
 	{
 		if (teamplay)
-			sprint(self.owner, "match mode \b- help-match for help\n");
+			sprint(self.owner, "match mode\n");
 	}
 	else
 	{
@@ -1035,7 +1073,7 @@ void () clanring_put_client_in_server =
 {
 	self.movetype = MOVETYPE_WALK;
 	self.finaldest_y = MOVETYPE_WALK;
-	self.style = self.style | CLANRING_CONNECTED;//placed here before assigning to a team
+	self.style = self.style | CLANRING_CONNECTED | CLANRING_AUTOID;//placed here before assigning to a team
 
 	utils_make_scheduled_event(clanring_bf_think, 0.1);
 
@@ -1113,7 +1151,8 @@ void () clanring_help =
 void () clanring_help_change =
 {
 	sprint(self, "\n");
-	sprint(self, " Type \bWarp\b to change maps\n");
+	sprint(self, " type \bwarp\b to change maps\n");
+	sprint(self, "\n");
 	//sprint(self, "Ôï ãèáîçå ìåöåìó¬ åîôåò ôèå îáíå ïæ\n");
 	//sprint(self, "ôèå ìåöåì éî ôèå ãïîóïìå®\n");
 };
@@ -1170,62 +1209,129 @@ void () clanring_info =
 void () clanring_commands =
 {
 	// regular user commands
-	sprint(self, " vinfo®®®®®®®®®®““™ help-server®®®“’’\n");
-	sprint(self, " help-misc®®®®®®“’— help-match®®®®“”›\n");
-	sprint(self, " help-observer®®“’“ help-walk®®®®®“––\n");
-	sprint(self, " help-fly®®®®®®®“–— help-chase®®®®“–˜\n");
-	sprint(self, " help-camera®®®®“—˜ commands®®®®®®“’˜\n");
-	sprint(self, " levels®®®®®®®®®“’™ autoweapon®®®®““–\n");
-	sprint(self, " admin®®®®®®®®®®“’š motd®®®®®®®®®®“’›\n");
-	sprint(self, " observer®®®®®®®“–’ walk®®®®®®®®®®“–“\n");
-	sprint(self, " flyme®®®®®®®®®®“–” chase®®®®®®®®®“–•\n");
-	sprint(self, " eyecam®®®®®®®®®“–› camera®®®®®®®®“—•\n");
-	sprint(self, " autochase®®®®®®“—— autocam®®®®®®®“—–\n");
-	sprint(self, " headsup®®®®®®®®“–š smooth®®®®®®®®N/A\n");
-	sprint(self, " tourney®®®®®®®®“—“ yes®®®®®®®®®®®““—\n");
-	sprint(self, " no®®®®®®®®®®®®®““˜ ready®®®®®®®®®“”’\n");
-	sprint(self, " notready®®®®®®®“”“ ready?®®®®®®®®“”•\n");
-	sprint(self, " unlock®®®®®®®®®“”” lock®®®®®®®®®®“•’\n");
-	sprint(self, " timerstop®®®®®®“”– timerstart®®®®“”—\n");
-	sprint(self, " +teamscores®®®®N/A -teamscores®®®N/A\n");
-	sprint(self, " timeset®®®®®®®®”“— otset®®®®®®®®®”“˜\n");
-	sprint(self, " ghostcode®®®®®®N/A ghost®®®®®®®®®“”™\n");
-	sprint(self, " score®®®®®®®®®®“”š nogibs®®®®®®®®””—\n");
-	sprint(self, " lowgibs®®®®®®®®””˜ highgibs®®®®®®””™\n");
-	sprint(self, " setquad®®®®®®®®””“ setpent®®®®®®®”””\n");
-	sprint(self, " setring®®®®®®®®””• normal®®®®®®®®”“™\n");
-	sprint(self, " practice®®®®®®®”“š match®®®®®®®®®”“›\n");
-	sprint(self, " deathmatch®®®®®””’ ticrate®®®®®®®““š\n");
-	sprint(self, " killstats®®®®®®“™’ efficiency®®®®“™“\n");
-	sprint(self, " stats®®®®®®®®®®“™” quadstats®®®®®“™•\n");
-	sprint(self, " badstats®®®®®®®“™– autostats®®®®®“™š\n");
-	sprint(self, " help-stats®®®®®“™› commentary®®®®“–™\n");
-	sprint(self, " obits®®®®®®®®®®”““ rules®®®®®®®®®“’•\n");
-	sprint(self, " rockets®®®®®®®®“•• autopause®®®®®”“’\n");
-	sprint(self, " admins®®®®®®®®®““’ teamstats®®®®®“™—\n");
-	sprint(self, " flagstats®®®®®®“™˜ sethook®®®®®®®”’”\n");
-	sprint(self, " setrunes®®®®®®®”’• autoid®®®®®®®®““›\n");
-	sprint(self, " +hook®®®®®®®®®®®›š -hook®®®®®®®®®®›™\n");
-	sprint(self, " droprune®®®®®®®®“› dropammo®®®®®®®”’\n");
-	sprint(self, " dropweapon®®®®®®”“ flagstatus®®®®®”•\n");
-	sprint(self, " hook®®®®®®®®®®®®”” nextmap®®®®®®®”’–\n");
+	sprint(self, "\n");
+	sprint(self, " \byes [y]\b    vote yes\n");
+	sprint(self, " \bno [n]\b     vote no\n");
+	sprint(self, " \bwarp\b       initiate vote to change level\n");
+	sprint(self, " \bmodes\b      mode switch commands\n");
+	sprint(self, " \bgameplay\b   match/game variable commands\n");
+	sprint(self, " \bwatch\b      observer commands\n");
+	sprint(self, " \bstat\b       statistics commands\n");
+	sprint(self, " \bshortcuts\b  command shortcuts\n");
+	sprint(self, " \bmisc\b       miscellaneous commands\n");
+	sprint(self, " \bmodhelp\b    detailed commands usage\n");
+	sprint(self, " \badmin\b      enter admin code\n");
+	sprint(self, "\n");
+	
 
 	// admin commands
 	if (self.style & CLANRING_ADMINISTRATOR)
 	{
-		sprint(self, "®®®®®®®®®®®®®®®®®®®®®®®®®®®®®®®®®®®®®®\n");
-		sprint(self, " help-admin®®®®®”’’ options®®®®®®®””›\n");
-		sprint(self, " safepractice®®®””– kick!®®®®®®®®®”“•\n");
-		sprint(self, " abortmatch®®®®®”“– ghostlist®®®®®”“”\n");
-		sprint(self, " modevote®®®®®®®””š spot®®®®®®®®®®”—’\n");
-		sprint(self, " nextspawn®®®®®®”–˜ makespawn®®®®®”–™\n");
-		sprint(self, " nextcam®®®®®®®®”–š makecam®®®®®®®”–›\n");
-		sprint(self, " dmset®®®®®®®®®®”’™ ips®®®®®®®®®®®”’˜\n");
-		sprint(self, " maxteams®®®®®®®”’š faststart®®®®®”’›\n");
-		sprint(self, " autoss®®®®®®®®®”’– ban!®®®®®®®®®®”’—\n");
-		//sprint(self, " qsmack®®®®®®®®®•™\n");
+		sprint(self, " admin commands\n");
+		sprint(self, "\n");
+		sprint(self, " \babortmatch\b   \bkick!\b\n");
+		sprint(self, " \bautoss\b       \bmodvote\b\n");
+		sprint(self, " \bban!\b         \bmakespawn\b\n");
+		sprint(self, " \bdmset\b        \bmaxteams\b\n");
+		sprint(self, " \bfaststart\b    \bnextspawn\b\n");
+		sprint(self, " \bghostlist\b    \bnextcam\b\n");
+		sprint(self, " \bhelp-admin\b   \boptions\b\n");
+		sprint(self, " \bips\b          \bsafepractice\b\n");
+		sprint(self, "\n");
 	}
-	clanring_help_change ();
+	//clanring_help_change ();
+};
+
+//  C O M M A N D S SUB MENUS
+//
+//  List all commands and impulses.
+
+void () modes_commands =
+{
+		sprint(self, "\n");
+		sprint(self, " \bdm\b\n");
+		sprint(self, " \bctf\b\n");
+		sprint(self, " \bpractice\b\n");
+		sprint(self, " \bffa\b\n");
+		sprint(self, " \bmatch\b\n");
+		sprint(self, "\n");
+};
+
+void () gameplay_commands =
+{
+		sprint(self, "\n");
+		sprint(self, " \bdroprune [dr]\b   \bsetpent\b\n");
+		sprint(self, " \bflagstatus\b      \bsetquad\b\n");
+		sprint(self, " \bghost\b           \bsetring\b\n");
+		sprint(self, " \bghostcode\b       \btimerstart [st]\b\n");
+		sprint(self, " \bhook\b            \btimerstop [pa]\b\n");
+		sprint(self, " \block\b            \btimeset\b\n");
+		sprint(self, " \botset\b           \btimeset10 [t10]\b\n");
+		sprint(self, " \bready [r]\b       \btimeset20 [t20]\b\n");
+		sprint(self, " \bready? [?]\b      \bunlock\b\n");
+		sprint(self, "\n");
+};
+
+void () watch_commands =
+{
+		sprint(self, "\n");
+		sprint(self, " \bautocam\b\n");
+		sprint(self, " \bautochase\b\n");
+		sprint(self, " \bautoeye\b\n");
+		sprint(self, " \beyecam [e]\b\n");
+		sprint(self, " \bflyme\b\n");
+		sprint(self, "\n");
+};
+
+void () stat_commands =
+{
+		sprint(self, "\n");
+		sprint(self, " \bbadstats\b\n");
+		sprint(self, " \befficiency\b\n");
+		sprint(self, " \bflagstats\b\n");
+		sprint(self, " \bkillstats\b\n");
+		sprint(self, " \bquadstats\b\n");
+		sprint(self, " \bstats\b\n");
+		sprint(self, " \bteamstats\b\n");
+		sprint(self, "\n");
+};
+
+void () misc_commands =
+{
+		sprint(self, "\n");
+		sprint(self, " \bdeathmatch\b\n");
+		sprint(self, " \bdropammo\b\n");
+		sprint(self, " \bdropweapon\b\n");
+		sprint(self, " \bmotd\b\n");
+		sprint(self, "\n");
+};
+
+void () modhelp_commands =
+{
+		sprint(self, "\n");
+		sprint(self, " \bhelp-camera\b\n");
+		sprint(self, " \bhelp-chase\b\n");
+		sprint(self, " \bhelp-fly\b\n");
+		sprint(self, " \bhelp-match\b\n");
+		sprint(self, " \bhelp-misc\b\n");
+		sprint(self, " \bhelp-observer\b\n");
+		sprint(self, " \bhelp-server\b\n");
+		sprint(self, " \bhelp-walk\b\n");
+		sprint(self, " \bvinfo\b\n");
+		sprint(self, "\n");
+};
+
+void () shortcuts_commands =
+{
+		sprint(self, "\n");
+		sprint(self, " \bmapx\b  warp to    \brd\b   red\n");
+		sprint(self, " \b?\b     ready?     \bt10\b  timeset10\n");
+		sprint(self, " \bbl\b    blue       \bt20\b  timeset20\n");
+		sprint(self, " \be\b     eyecam     \bst\b   timerstart\n");
+		sprint(self, " \bn\b     no         \bpa\b   timerstop\n");
+		sprint(self, " \bnr\b    notready   \byl\b   yellow\n");
+		sprint(self, " \br\b     ready      \by\b    yes\n");
+		sprint(self, "\n");
 };
 
 //
@@ -1403,6 +1509,120 @@ void () clanring_show_rules =
 };
 
 //
+//  S H O W  R U L E S  P R E M A T C H
+//
+void () clanring_show_rules_prematch =
+{
+	if (clanring_state & CLANRING_MATCH_STARTED || clanring_match_timer.count > 10 || clanring_match_timer.count < 1)
+	{
+		centerprint(self, "\n");
+		return;
+	}
+
+	local float temp;
+	local string s0 = "", s1 = "", s2 = "", s3 = "", s4 = "", s5 = "", s6 = "", s7 = "", s8 = "", s9 = "", s10 = "", s11 = "", s12 = "";
+
+	if (clanring_match_timer.count > 9)
+		s0 = sprintf("\bcountdown:   \b%s\n\n", strings_ftos_gold(clanring_match_timer.count));
+	else
+		s0 = sprintf("\bcountdown:    \b%s\n\n", strings_ftos_gold(clanring_match_timer.count));
+
+	if (clanring_match_timer.count > 3)
+	{
+		if (clanring_playmode & CLANRING_CAPTURE_THE_FLAG)
+			s1 = "Žcrctf match modeŽ\n\n";
+		else
+			s1 = "Žcrmod match modeŽ\n\n";
+
+		temp = clanring_timelimit;	
+		if (temp > 9)
+			s2 = sprintf("%s%s\n", "\btimelimit    ", ftos(temp));
+		else
+			s2 = sprintf("%s%s\n", "\btimelimit     ", ftos(temp));
+		temp = cvar("fraglimit");
+		if (temp > 9)
+			s3 = sprintf("%s%s\n", "\bfraglimit    ", ftos(temp));
+		else if (temp > 99)
+			s3 = sprintf("%s%s\n", "\bfraglimit   ", ftos(temp));			
+		else
+			s3 = sprintf("%s%s\n", "\bfraglimit     ", ftos(temp));
+		
+		temp = cvar("deathmatch");
+		if (temp == 1)
+			s4 = "\bweaponstay  \boff\n";
+		else if (temp == 3)
+			s4 = "\bweaponstay   \bon\n";
+		else
+			s4 = sprintf("%s%s\n", "\bdeathmatch    ", ftos(temp));
+
+		temp = cvar("teamplay");
+		s5 = sprintf("%s%s\n", "\bteamplay      ", ftos(temp));
+
+		if (clanring_overtime > 0)
+		{
+			if (clanring_overtime > 9)
+				s6 = sprintf("%s%s\n", "\bovertime     ", ftos(clanring_overtime));
+			else
+				s6 = sprintf("%s%s\n", "\bovertime      ", ftos(clanring_overtime));
+		}
+		else
+		{
+			if (clanring_overtime == 0)
+				s6 = "      \bovertime     \bdisabled\n";
+			else
+				s6 = "          \bovertime     \bsudden death\n";
+		}
+
+		if (clanring_playmode & CLANRING_NO_QUAD)
+			s7 = "\bquad        \boff\n";
+		else
+			s7 = "\bquad         \bon\n";
+
+		if (clanring_playmode & CLANRING_NO_PENT)
+			s8 = "\bpent        \boff\n";
+		else
+			s8 = "\bpent         \bon\n";
+
+		if (clanring_playmode & CLANRING_NO_RING)
+			s9 = "\bring        \boff\n";
+		else
+			s9 = "\bring         \bon\n";
+
+		if (clanring_playmode & CLANRING_CAPTURE_THE_FLAG)
+		{
+			if (clanring_playmode & CLANRING_RUNES)
+				s10 = "\brunes        \bon\n";
+			else
+				s10 = "\brunes       \boff\n"; 
+		
+			if (clanring_playmode & CLANRING_NO_HOOK)
+				s11 = "\bhook        \boff\n";
+			else
+				s11 = "\bhook         \bon\n";
+		}
+		else
+		{
+			s10 = "";
+			s11 = "";
+		}
+		
+		if (clanring_playmode & CLANRING_NO_SPOOGE)
+			s12 = "\bno spooge    \bon\n";
+		else
+			s12 = "";//hush up this: server.qc:1596: warning F302: Potentially uninitialised variable s12
+		local string cp1 = "", cp2 = "", cp3 = ""; //initialize locals so we dont have residual garbage next time used.
+		cp1 = sprintf("%s%s%s", s2, s3, s4);
+		cp2 = sprintf("%s%s%s", s6, s7, s8);
+		cp3 = sprintf("%s%s%s%s", s9, s10, s11, s12);
+		centerprint(self, s0, s1, cp1, cp2, cp3);
+	}
+	else if (clanring_match_timer.count > 0)
+	{
+		centerprint(self, s0, "\n\n\n\n\n\n\n\n\n\n\n\n\n");
+	}
+};
+
+//
 //  A D M I N S
 //
 //  List the server admins and the codes they used
@@ -1487,7 +1707,7 @@ void () clanring_impulse =
 		votables_request_vote_exit();
 	else if (self.impulse == 209)
 		votables_request_set_faststarts();
-	else if (self.impulse == 70)//R00k: allow players to manually go afk, so they wont be counted in votes.
+	else if (self.impulse == 57)//R00k: allow players to manually go afk, so they wont be counted in votes.(changed to use imp 70 to toggle off the ctf hud)
 	{
 		if (!(self.style & CLANRING_AFK_CLIENT))
 		{
@@ -1496,6 +1716,13 @@ void () clanring_impulse =
 			self.style = self.style | CLANRING_AFK_CLIENT;
 			self.afk_time = time;
 		}		
+	}
+	else if (self.impulse == 70)
+			self.statstate = -1;
+	else if (self.impulse >= 71 && self.impulse <= 81) 
+	{
+		self.statstate = self.impulse - 71;
+		sprint(self, "Status bar set\n");
 	}
     else if (self.impulse == 119)
 	{
@@ -1563,6 +1790,20 @@ void () clanring_impulse =
     	clanring_ticrate ();
 	else if (self.impulse == 180)
     	self.style = (self.style | CLANRING_FOUND_BINDINGS);
+	else if (self.impulse == 181)
+    	modes_commands ();
+	else if (self.impulse == 182)
+    	gameplay_commands ();
+	else if (self.impulse == 183)
+    	watch_commands ();
+	else if (self.impulse == 184)
+    	stat_commands ();
+	else if (self.impulse == 185)
+    	misc_commands ();
+	else if (self.impulse == 186)
+    	modhelp_commands ();
+	else if (self.impulse == 187)
+    	shortcuts_commands ();
 	else if (self.impulse >= 115 && self.impulse <= 116)
 	{
         if (self.style & CLANRING_KICK_CONFIRM)
