@@ -685,7 +685,7 @@ void() PlayerDie =
 	self.invincible_finished 	= 0;
 	self.super_damage_finished 	= 0;
 	self.radsuit_finished 		= 0;	
-	self.effects 				= (self.effects - (self.effects & (EF_DIMLIGHT | EF_RED | EF_BLUE)));
+	self.effects 				= (self.effects - (self.effects & (EF_DIMLIGHT | EF_PENTLIGHT | EF_QUADLIGHT))); //QE
 	self.modelindex 			= modelindex_player;
 
 	if (self.items & IT_ROCKET_LAUNCHER)

@@ -641,9 +641,11 @@ void () clanring_set_aliases =
 	stuffcmd(self, "alias red \";color 4;w5;ready;\"\n");
 	stuffcmd(self, "alias blue \";color 13;w5;ready;\"\n");
 	stuffcmd(self, "alias help-stats impulse 179\n");
-	stuffcmd(self, "alias sm1 \"echo Smoothing ON ; cl_nolerp 1 ; alias smooth sm0\"\n");
-	stuffcmd(self, "alias sm0 \"echo Smoothing OFF ; cl_nolerp 0 ; alias smooth sm1\"\n");
-	stuffcmd(self, "alias smooth sm1\n");
+	//QE
+	// stuffcmd(self, "alias sm1 \"echo Smoothing ON ; cl_nolerp 1 ; alias smooth sm0\"\n");
+	// stuffcmd(self, "alias sm0 \"echo Smoothing OFF ; cl_nolerp 0 ; alias smooth sm1\"\n");
+	// stuffcmd(self, "alias smooth sm1\n");
+	//QE
 	stuffcmd(self, "alias init echo\n");                // CRMOD - So clients only see 'init' once
 	stuffcmd(self, "alias +hook impulse 98\n");
 	stuffcmd(self, "alias -hook impulse 97\n");

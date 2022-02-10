@@ -1102,7 +1102,10 @@ void() powerup_touch =
 		other.invincible_time = 1;
 		other.invincible_finished = time + 30;
 		other.effects = other.effects | EF_DIMLIGHT;	// 1998-07-23 Better performance in handling of powerups by Maddes
-		other.effects = other.effects | EF_RED;	
+		//QE
+		//other.effects = other.effects | EF_RED;	
+		other.effects = other.effects | EF_PENTLIGHT;	
+		//QE
 
 		if (teamplay && clanring_playmode & CLANRING_MATCH_MODE)
 		{
@@ -1144,7 +1147,10 @@ void() powerup_touch =
 		other.super_time = 1;
 		other.super_damage_finished = time + 30;
 		other.effects = other.effects | EF_DIMLIGHT;	// 1998-07-23 Better performance in handling of powerups by Maddes
-		other.effects = other.effects | EF_BLUE;
+		//QE
+		//other.effects = other.effects | EF_BLUE;
+		other.effects = other.effects | EF_QUADLIGHT;	
+		//QE
 
 		// CRMOD - stats
 		other.clanring_qdwep_z = other.clanring_qdwep_z + 1;
